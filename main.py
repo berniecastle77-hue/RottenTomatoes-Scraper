@@ -1,8 +1,13 @@
 import aiohttp
 import asyncio
+import logging
 
 from typing import Optional
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:152.0) Gecko/20100101 Firefox/152.0"
 
@@ -26,13 +31,13 @@ async def find_first_movie_link(soup: BeautifulSoup) -> Optional[str]:
         movie_link = soup.find("a", attrs={"class": "unset", "slot": "title", "data-qa": "info-name"})
         
     if not movie_link:
-        print("No se encontro movie_link")
+        logger.error("No se encontro movie_link")
         return 
     
     href = movie_link.get("href")
     
     if not href or not isinstance(href, str):
-        print("Error: href no es un str")
+        logger.error("Error: href no es un str")
         return
     
     return href
@@ -47,7 +52,7 @@ async def search_movie(session: aiohttp.ClientSession, query: str) -> Optional[s
             response.raise_for_status()
             html = await response.text(encoding="utf-8")
     except (aiohttp.ClientError, asyncio.TimeoutError):
-        print("error al buscar la pelicula")
+        logger.error("error al buscar la pelicula")
         return
     
     soup = BeautifulSoup(html, "html.parser")
@@ -66,7 +71,7 @@ async def find_scorecard(soup: BeautifulSoup) -> Optional[dict[str, dict]]:
         media_scorecard = soup.find("div", attrs= {"class": "media-scorecard"})
         
     if not media_scorecard:
-        print("Error no se encontro scorecard")
+        logger.error("Error no se encontro scorecard")
         return {}
     
     rt_critics_percentage = media_scorecard.select_one(
@@ -117,7 +122,7 @@ async def init_scorecard_search(session: aiohttp.ClientSession, link: str) -> Op
             response.raise_for_status()
             html = await response.text(encoding="utf-8")
     except (aiohttp.ClientError, asyncio.TimeoutError):
-        print("Error al obtener la pagina de la pelicula/serie")
+        logger.error("Error al obtener la pagina de la pelicula/serie")
         return None
     
     soup = BeautifulSoup(html, "html.parser")
@@ -132,10 +137,12 @@ async def main(search: str):
             score_info = await init_scorecard_search(session=session, link=link)
             return score_info
         else:
-            print("No se encontro la pelicula/serie")
+            logger.error("No se encontro la pelicula/serie")
             return None
 
-#### USE EXAMPLE ####
+### USE EXAMPLE ####
 
 # if __name__ == "__main__":
-#     asyncio.run(main(search="Tokyo Drift"))
+#     info = asyncio.run(main(search="Tokyo Drift"))
+
+#     print(info)
