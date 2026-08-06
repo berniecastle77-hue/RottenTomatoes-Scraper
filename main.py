@@ -54,7 +54,7 @@ async def search_movie(session: aiohttp.ClientSession, query: str) -> Optional[s
     
     return await find_first_movie_link(soup=soup)
 
-async def find_scorecard(soup: BeautifulSoup) -> Optional[dict]:
+async def find_scorecard(soup: BeautifulSoup) -> Optional[dict[str, dict]]:
     
     score_info = {}
     
@@ -67,7 +67,7 @@ async def find_scorecard(soup: BeautifulSoup) -> Optional[dict]:
         
     if not media_scorecard:
         print("Error no se encontro scorecard")
-        return
+        return {}
     
     rt_critics_percentage = media_scorecard.select_one(
         "rt-text[slot='critics-score']"
@@ -110,7 +110,7 @@ async def find_scorecard(soup: BeautifulSoup) -> Optional[dict]:
         
     return score_info
     
-async def init_scorecard_search(session: aiohttp.ClientSession, link: str) -> None:
+async def init_scorecard_search(session: aiohttp.ClientSession, link: str) -> Optional[dict[str, dict]]:
     
     try:
         async with session.get(url=link, headers=headers, timeout=TIMEOUT) as response:
@@ -118,7 +118,7 @@ async def init_scorecard_search(session: aiohttp.ClientSession, link: str) -> No
             html = await response.text(encoding="utf-8")
     except (aiohttp.ClientError, asyncio.TimeoutError):
         print("Error al obtener la pagina de la pelicula/serie")
-        return  
+        return None
     
     soup = BeautifulSoup(html, "html.parser")
     
@@ -128,9 +128,12 @@ async def main(search: str):
     
     async with aiohttp.ClientSession() as session:
         link = await search_movie(session=session, query=search)
-        score_info = await init_scorecard_search(session=session, link=link)
-    
-    return score_info
+        if link:
+            score_info = await init_scorecard_search(session=session, link=link)
+            return score_info
+        else:
+            print("No se encontro la pelicula/serie")
+            return None
 
 #### USE EXAMPLE ####
 
