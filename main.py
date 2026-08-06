@@ -128,9 +128,9 @@ async def main(search: str):
     
     async with aiohttp.ClientSession() as session:
         link = await search_movie(session=session, query=search)
-        xd = await init_scorecard_search(session=session, link=link)
+        score_info = await init_scorecard_search(session=session, link=link)
     
-        print(xd)
+    return score_info
 
 #### USE EXAMPLE ####
 
