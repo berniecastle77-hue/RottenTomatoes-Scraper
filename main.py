@@ -79,8 +79,7 @@ async def find_scorecard(soup: BeautifulSoup) -> Optional[dict[str, dict]]:
     )
     
     if not rt_critics_percentage:
-        rt_critics_percentage.find_next("rt-text", {"slot": "critics-score"})
-    
+        rt_critics_percentage = media_scorecard.find_next("rt-text", {"slot": "critics-score"})
     
     rt_critics_reviews = media_scorecard.select_one(
         "rt-link[slot='critics-reviews']"
@@ -89,10 +88,20 @@ async def find_scorecard(soup: BeautifulSoup) -> Optional[dict[str, dict]]:
     if not rt_critics_reviews:
         rt_critics_reviews = media_scorecard.find_next("rt-link", attrs={"slot": "critics-reviews"})
     
-    rt_critics_reviews_count = rt_critics_reviews.text.replace("Reviews", "").strip().replace(",", "")
-    rt_critics_reviews_link = f"{URL}{rt_critics_reviews.get('href')}"
+    critics_pct_text = rt_critics_percentage.text.strip() if rt_critics_percentage else "N/A"
     
-    score_info["tomatoes"] = {"percentage": rt_critics_percentage.text.strip(), "reviews": rt_critics_reviews_count, "reviews_link": rt_critics_reviews_link}
+    if rt_critics_reviews:
+        rt_critics_reviews_count = rt_critics_reviews.text.replace("Reviews", "").strip().replace(",", "")
+        rt_critics_reviews_link = f"{URL}{rt_critics_reviews.get('href')}"
+    else:
+        rt_critics_reviews_count = "0"
+        rt_critics_reviews_link = ""
+    
+    score_info["tomatoes"] = {
+        "percentage": critics_pct_text, 
+        "reviews": rt_critics_reviews_count, 
+        "reviews_link": rt_critics_reviews_link
+    }
     
     rt_auience_percentage = media_scorecard.select_one(
         "rt-text[slot='audience-score']"
@@ -106,12 +115,22 @@ async def find_scorecard(soup: BeautifulSoup) -> Optional[dict[str, dict]]:
     )
     
     if not rt_audience_reviews:
-        rt_audience_reviews = media_scorecard.find_next("rt-link", {"slot": "audience-reviews"})
+        rt_audience_reviews = media_scorecard.find_next("rt-link", attrs={"slot": "audience-reviews"})
     
-    rt_audience_reviews_count = rt_audience_reviews.text.replace("+ Verified Ratings", "").replace("+ Ratings", "").strip().replace(",", "")
-    rt_audience_reviews_link = f"{URL}{rt_audience_reviews.get("href")}"
+    audience_pct_text = rt_auience_percentage.text.strip() if rt_auience_percentage else "N/A"
+
+    if rt_audience_reviews:
+        rt_audience_reviews_count = rt_audience_reviews.text.replace("+ Verified Ratings", "").replace("+ Ratings", "").strip().replace(",", "")
+        rt_audience_reviews_link = f"{URL}{rt_audience_reviews.get('href')}"
+    else:
+        rt_audience_reviews_count = "0"
+        rt_audience_reviews_link = ""
     
-    score_info["audience"] = {"percentage": rt_auience_percentage.text.strip(), "reviews": rt_audience_reviews_count, "reviews_link": rt_audience_reviews_link}
+    score_info["audience"] = {
+        "percentage": audience_pct_text, 
+        "reviews": rt_audience_reviews_count, 
+        "reviews_link": rt_audience_reviews_link
+    }
         
     return score_info
     
@@ -140,9 +159,8 @@ async def main(search: str):
             logger.error("No se encontro la pelicula/serie")
             return None
 
-### USE EXAMPLE ####
+if __name__ == "__main__":
+    query_input = input("Escribe el nombre de la pelicula o serie: ")
+    info = asyncio.run(main(search=query_input))
+    print(info)
 
-# if __name__ == "__main__":
-#     info = asyncio.run(main(search="Tokyo Drift"))
-
-#     print(info)
